@@ -1,0 +1,19 @@
+{% extends 'main/base.html' %}
+
+{% block content %}
+    <h1>Seznam produktů</h1>
+
+    <div class="product-list">
+        {% for product in products %}
+            <div class="product-card">
+                <h2><a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a></h2>
+                <p><strong>Cena:</strong> {{ product.price }} Kč</p>
+                <p>{{ product.description }}</p>
+                <button>Přidat do košíku</button>
+            </div>
+        {% empty %}
+            <p>Žádné produkty nejsou k dispozici.</p>
+        {% endfor %}
+    </div>
+{% endblock %}
+
