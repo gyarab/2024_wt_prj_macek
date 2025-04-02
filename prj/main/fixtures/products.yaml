@@ -1,0 +1,43 @@
+- model: main.product
+  pk: 1
+  fields:
+    name: Jablka Golden Delicious
+    price: 35.00
+    description: Sladká a šťavnatá jablka.
+    weight: 1.00
+    available: true
+    image: products/golden_delicious.jpg
+    category: 5
+
+- model: main.product
+  pk: 2
+  fields:
+    name: Hrušky Williams
+    price: 40.00
+    description: Zralé a aromatické hrušky.
+    weight: 1.00
+    available: true
+    image: products/williams_pears.jpg
+    category: 6
+
+- model: main.product
+  pk: 3
+  fields:
+    name: Chléb konzumní
+    price: 25.00
+    description: Bílý pšeničný chléb.
+    weight: 0.80
+    available: true
+    image: products/konsumni_chleb.jpg
+    category: 7
+
+- model: main.product
+  pk: 4
+  fields:
+    name: Rohlíky
+    price: 5.00
+    description: Běžné bílé pečivo.
+    weight: 0.05
+    available: true
+    image: products/rohliky.jpg
+    category: 8

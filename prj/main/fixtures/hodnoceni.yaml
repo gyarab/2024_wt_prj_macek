@@ -1,0 +1,31 @@
+- model: main.hodnoceni
+  pk: 1
+  fields:
+    uzivatel: 1
+    produkt: 1
+    hodnoceni: 5
+    komentar: "Výborná jablka, doporučuji!"
+
+- model: main.hodnoceni
+  pk: 2
+  fields:
+    uzivatel: 1
+    produkt: 1
+    hodnoceni: 4
+    komentar: "Dobrá jablka, ale mohla by být sladší."
+
+- model: main.hodnoceni
+  pk: 3
+  fields:
+    uzivatel: 1
+    produkt: 2
+    hodnoceni: 3
+    komentar: "Hrušky byly trochu tvrdé."
+
+- model: main.hodnoceni
+  pk: 4
+  fields:
+    uzivatel: 1
+    produkt: 3
+    hodnoceni: 5
+    komentar: "Chléb byl čerstvý a chutný."
