@@ -1,0 +1,15 @@
+- model: main.address
+  pk: 1
+  fields:
+    user: 1
+    street: Hlavní 123
+    city: Praha
+    zip_code: 11000
+
+- model: main.address
+  pk: 2
+  fields:
+    user: 1
+    street: Vedlejší 456
+    city: Brno
+    zip_code: 60200

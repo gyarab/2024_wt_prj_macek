@@ -1,0 +1,47 @@
+- model: main.category
+  pk: 1
+  fields:
+    name: Ovoce
+    parent: null
+
+- model: main.category
+  pk: 2
+  fields:
+    name: Zelenina
+    parent: null
+
+- model: main.category
+  pk: 3
+  fields:
+    name: Pečivo
+    parent: null
+
+- model: main.category
+  pk: 4
+  fields:
+    name: Mléčné výrobky
+    parent: null
+
+- model: main.category
+  pk: 5
+  fields:
+    name: Jablka
+    parent: 1
+
+- model: main.category
+  pk: 6
+  fields:
+    name: Hrušky
+    parent: 1
+
+- model: main.category
+  pk: 7
+  fields:
+    name: Chléb
+    parent: 3
+
+- model: main.category
+  pk: 8
+  fields:
+    name: Rohlíky
+    parent: 3
