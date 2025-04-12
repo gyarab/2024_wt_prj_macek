@@ -3,6 +3,7 @@
 {% block content %}
     <h1>Seznam produktů</h1>
 
+<<<<<<< HEAD
     <!-- Filtrování podle kategorií -->
     <div class="mb-3">
         <h4>Filtrovat podle kategorie:</h4>
@@ -52,6 +53,24 @@
                         <button class="btn btn-success">Přidat do košíku</button>
                     </div>
                 </div>
+=======
+    {% if category %}
+        <h2>Kategorie: {{ category.name }}</h2>
+    {% endif %}
+
+    <div class="product-list">
+        {% for product in products %}
+            <div class="product-card">
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" style="max-width: 200px;">
+                {% else %}
+                    <p>Obrázek není k dispozici.</p>
+                {% endif %}
+                <h2><a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a></h2>
+                <p><strong>Cena:</strong> {{ product.price }} Kč</p>
+                <p>{{ product.description }}</p>
+                <button>Přidat do košíku</button>
+>>>>>>> d957692a50c771ae204977643fb9c2f5062e7db8
             </div>
         {% empty %}
             <p>Žádné produkty nejsou k dispozici.</p>

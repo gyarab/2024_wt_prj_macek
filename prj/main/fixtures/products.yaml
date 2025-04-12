@@ -39,5 +39,5 @@
     description: Běžné bílé pečivo.
     weight: 0.05
     available: true
-    image: products/rohliky.jpg
+    image: "rohlik.jpg"
     category: 8

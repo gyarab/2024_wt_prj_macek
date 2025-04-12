@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 class Category(models.Model):
     name = models.CharField(max_length=300)
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, blank=True, null=True, related_name='children')
-
+    
     def __str__(self):
         return self.name
 
@@ -15,7 +15,7 @@ class Product(models.Model):
     weight = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     available = models.BooleanField(default=True)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
 
     def __str__(self):
         return self.name
