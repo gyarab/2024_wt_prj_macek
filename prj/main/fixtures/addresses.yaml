@@ -7,7 +7,7 @@
     zip_code: 11000
 
 - model: main.address
-  pk: 2
+  ptk: 2
   fields:
     user: 1
     street: Vedlejší 456
