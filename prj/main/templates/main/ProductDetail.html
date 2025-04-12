@@ -4,5 +4,13 @@
     <h1>{{ product.name }}</h1>
     <p><strong>Cena:</strong> {{ product.price }} Kč</p>
     <p>{{ product.description }}</p>
+
+    <!-- Zobrazení obrázku, pokud je k dispozici -->
+    {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid">
+    {% else %}
+        <p>Obrázek není k dispozici</p>
+    {% endif %}
+
     <a href="{% url 'product_list' %}">← Zpět na seznam produktů</a>
 {% endblock %}

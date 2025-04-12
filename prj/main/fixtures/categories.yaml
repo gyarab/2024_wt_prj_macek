@@ -45,3 +45,93 @@
   fields:
     name: Rohlíky
     parent: 3
+
+- model: main.category
+  pk: 9
+  fields:
+    name: Maso
+    parent: null
+
+- model: main.category
+  pk: 10
+  fields:
+    name: Nápoje
+    parent: null
+
+- model: main.category
+  pk: 11
+  fields:
+    name: Trvanlivé potraviny
+    parent: null
+
+- model: main.category
+  pk: 12
+  fields:
+    name: Sladkosti
+    parent: null
+
+- model: main.category
+  pk: 13
+  fields:
+    name: Mražené výrobky
+    parent: null
+
+- model: main.category
+  pk: 14
+  fields:
+    name: Kuřecí maso
+    parent: 9
+
+- model: main.category
+  pk: 15
+  fields:
+    name: Hovězí maso
+    parent: 9
+
+- model: main.category
+  pk: 16
+  fields:
+    name: Nealkoholické nápoje
+    parent: 10
+
+- model: main.category
+  pk: 17
+  fields:
+    name: Alkoholické nápoje
+    parent: 10
+
+- model: main.category
+  pk: 18
+  fields:
+    name: Těstoviny
+    parent: 11
+
+- model: main.category
+  pk: 19
+  fields:
+    name: Konzervy
+    parent: 11
+
+- model: main.category
+  pk: 20
+  fields:
+    name: Sušenky
+    parent: 12
+
+- model: main.category
+  pk: 21
+  fields:
+    name: Čokolády
+    parent: 12
+
+- model: main.category
+  pk: 22
+  fields:
+    name: Zmrzlina
+    parent: 13
+
+- model: main.category
+  pk: 23
+  fields:
+    name: Mražená zelenina
+    parent: 13
