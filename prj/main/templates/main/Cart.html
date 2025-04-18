@@ -1,0 +1,11 @@
+{% extends 'main/base.html' %}
+
+{% block content %}
+    <h1>Košík</h1>
+
+    <p>Váš košík je zatím prázdný.</p>
+
+    <a href="{% url 'product_list' %}" class="btn btn-primary mt-3">
+        ← Pokračovat v nakupování
+    </a>
+{% endblock %}

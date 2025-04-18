@@ -14,7 +14,6 @@
     <p><strong>Cena:</strong> {{ product.price }} Kč</p>
     <p>{{ product.description }}</p>
 
-    <!-- Zobrazení obrázku, pokud je k dispozici -->
     {% if product.image %}
         <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid">
     {% else %}
@@ -22,4 +21,10 @@
     {% endif %}
 
     <a href="{% url 'product_list' %}">← Zpět na seznam produktů</a>
+
+    <div class="mt-3">
+        <a href="{% url 'cart' %}" class="btn btn-success">
+            <i class="fas fa-shopping-cart"></i> Přidat do košíku
+        </a>
+    </div>
 {% endblock %}
