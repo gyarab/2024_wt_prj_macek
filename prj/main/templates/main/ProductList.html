@@ -3,8 +3,6 @@
 {% block content %}
     <h1>Seznam produktů</h1>
 
-<<<<<<< HEAD
-    <!-- Filtrování podle kategorií -->
     <div class="mb-3">
         <h4>Filtrovat podle kategorie:</h4>
         <ul class="list-inline">
@@ -38,39 +36,29 @@
         </div>
     {% endif %}
 
-    <div class="row row-cols-1 row-cols-md-2 g-4">
+    <div class="row row-cols-1 row-cols-md-4 g-4">
         {% for product in products %}
             <div class="col">
                 <div class="card h-100">
-                    <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
-                    <div class="card-body">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="width: 100%; height: 200px; object-fit: cover;">
+                    {% else %}
+                        <div class="card-img-top text-center p-3 text-muted">Obrázek není k dispozici.</div>
+                    {% endif %}
+                    <div class="card-body d-flex flex-column">
                         <h5 class="card-title">
                             <a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a>
                         </h5>
                         <p class="card-text"><strong>Cena:</strong> {{ product.price }} Kč</p>
                         <p class="card-text"><strong>Kategorie:</strong> {{ product.category.name }}</p>
                         <p class="card-text">{{ product.description }}</p>
-                        <button class="btn btn-success">Přidat do košíku</button>
+                        <div class="mt-auto">
+                            <a href="{% url 'cart' %}" class="btn btn-success w-100">
+                                <i class="fas fa-shopping-cart"></i> Přidat do košíku
+                            </a>
+                        </div>
                     </div>
                 </div>
-=======
-    {% if category %}
-        <h2>Kategorie: {{ category.name }}</h2>
-    {% endif %}
-
-    <div class="product-list">
-        {% for product in products %}
-            <div class="product-card">
-                {% if product.image %}
-                    <img src="{{ product.image.url }}" alt="{{ product.name }}" style="max-width: 200px;">
-                {% else %}
-                    <p>Obrázek není k dispozici.</p>
-                {% endif %}
-                <h2><a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a></h2>
-                <p><strong>Cena:</strong> {{ product.price }} Kč</p>
-                <p>{{ product.description }}</p>
-                <button>Přidat do košíku</button>
->>>>>>> d957692a50c771ae204977643fb9c2f5062e7db8
             </div>
         {% empty %}
             <p>Žádné produkty nejsou k dispozici.</p>
