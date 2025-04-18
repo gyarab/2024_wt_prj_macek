@@ -60,3 +60,23 @@ class Hodnoceni(models.Model):
 
     def __str__(self):
         return f"Hodnocení {self.produkt.name} od {self.uzivatel.username}"
+
+
+class Cart(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="carts", null=True, blank=True)
+    session_key = models.CharField(max_length=40, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Cart for {self.user.username if self.user else self.session_key}"
+
+    def get_item_count(self):
+        return sum(item.quantity for item in self.items.all())
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, related_name="items", on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.quantity} of {self.product.name}"
