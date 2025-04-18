@@ -1,6 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
 from django.views.generic import ListView, DetailView, TemplateView
-from .models import Product, Category
+from .models import Product, Category, Cart, CartItem
+from django.contrib.auth.models import User
 
 class ProductList(ListView):
     model = Product
@@ -37,3 +39,23 @@ class ProductDetail(DetailView):
 
 class CartView(TemplateView):
     template_name = 'main/Cart.html'
+
+def add_to_cart(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    # Pokud je uživatel přihlášen, použij jeho uživatelský košík, jinak použij session
+    if request.user.is_authenticated:
+        cart, created = Cart.objects.get_or_create(user=request.user)
+    else:
+        session_key = request.session.session_key
+        if not session_key:
+            request.session.create()
+        cart, created = Cart.objects.get_or_create(session_key=session_key)
+
+    # Přidej nebo aktualizuj položku v košíku
+    cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
+    if not created:
+        cart_item.quantity += 1
+        cart_item.save()  # Nezapomeň uložit změny!
+
+    return JsonResponse({'cart_count': cart.get_item_count()})

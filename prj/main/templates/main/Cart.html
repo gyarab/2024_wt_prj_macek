@@ -3,9 +3,57 @@
 {% block content %}
     <h1>Košík</h1>
 
-    <p>Váš košík je zatím prázdný.</p>
+    {% if cart_items %}
+        <div class="list-group">
+            {% for item in cart_items %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5>{{ item.product.name }}</h5>
+                        <p>{{ item.product.price }} Kč x {{ item.quantity }}</p>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">{{ item.quantity }}</span>
+                </div>
+            {% endfor %}
+        </div>
 
-    <a href="{% url 'product_list' %}" class="btn btn-primary mt-3">
-        ← Pokračovat v nakupování
-    </a>
+        <div class="mt-4">
+            <h3>Celková cena: {{ total_price }} Kč</h3>
+            <a href="{% url 'checkout' %}" class="btn btn-success">Přejít k pokladně</a>
+        </div>
+    {% else %}
+        <p>Váš košík je prázdný.</p>
+    {% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Funkce pro zobrazení popupu
+        function showPopup(message) {
+            var popup = document.createElement('div');
+            popup.classList.add('popup');
+            popup.textContent = message;
+            popup.style.position = 'fixed';
+            popup.style.top = '20px';
+            popup.style.right = '20px';
+            popup.style.padding = '10px';
+            popup.style.backgroundColor = 'green';
+            popup.style.color = 'white';
+            popup.style.borderRadius = '5px';
+            popup.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+            document.body.appendChild(popup);
+
+            // Automaticky skryt popup po 3 sekundách
+            setTimeout(function() {
+                popup.remove();
+            }, 3000);
+        }
+
+        // Simulace přidání do košíku, zavolá showPopup při přidání
+        document.querySelectorAll('.add-to-cart-btn').forEach(function(button) {
+            button.addEventListener('click', function() {
+                showPopup('Produkt byl přidán do košíku!');
+            });
+        });
+    </script>
 {% endblock %}

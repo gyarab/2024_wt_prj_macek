@@ -3,28 +3,43 @@
 {% load static %}
 
 {% block content %}
+    <div class="mb-4">
+        <a href="{% url 'product_list' %}" class="btn btn-outline-primary btn-lg">
+            ← Zpět na seznam produktů
+        </a>
+    </div>
+
     <h1>{{ product.name }}</h1>
 
     {% if product.image %}
-        <img src="{{ product.image.url }}" alt="{{ product.name }}" style="max-width: 300px;">
+        <img src="{{ product.image.url }}" alt="{{ product.name }}" style="max-width: 500px;" class="mb-3">
     {% else %}
         <p>Obrázek není k dispozici.</p>
     {% endif %}
 
     <p><strong>Cena:</strong> {{ product.price }} Kč</p>
+    <p><strong>Váha:</strong> {{ product.weight }} g</p>
+
+    <p><strong>Dostupnost:</strong>
+        {% if product.available %}
+            <span class="text-success">Skladem</span>
+        {% else %}
+            <span class="text-danger">Vyprodáno</span>
+        {% endif %}
+    </p>
+
     <p>{{ product.description }}</p>
 
-    {% if product.image %}
-        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid">
-    {% else %}
-        <p>Obrázek není k dispozici</p>
-    {% endif %}
-
-    <a href="{% url 'product_list' %}">← Zpět na seznam produktů</a>
-
-    <div class="mt-3">
-        <a href="{% url 'cart' %}" class="btn btn-success">
+    <div class="mt-4">
+        <a href="#" class="btn btn-success btn-lg add-to-cart" data-product-id="{{ product.pk }}" data-product-name="{{ product.name }}">
             <i class="fas fa-shopping-cart"></i> Přidat do košíku
         </a>
     </div>
+
+    <!-- Popup pro přidání do košíku -->
+    <div class="alert alert-success alert-dismissible fade" id="cartPopup" role="alert">
+        Produkt byl přidán do košíku!
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
 {% endblock %}
