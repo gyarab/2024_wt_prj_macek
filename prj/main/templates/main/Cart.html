@@ -9,7 +9,12 @@
                 <div class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
                         <h5>{{ item.product.name }}</h5>
-                        <p>{{ item.product.price }} Kč x {{ item.quantity }}</p>
+                        <p>{{ item.product.price }} Kč x <span class="item-quantity">{{ item.quantity }}</span></p>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-secondary update-quantity" data-id="{{ item.product.id }}" data-action="decrement">−</button>
+                            <button class="btn btn-sm btn-outline-secondary update-quantity" data-id="{{ item.product.id }}" data-action="increment">+</button>
+                            <button class="btn btn-sm btn-outline-danger remove-item" data-id="{{ item.product.id }}">Odstranit</button>
+                        </div>
                     </div>
                     <span class="badge bg-primary rounded-pill">{{ item.quantity }}</span>
                 </div>
@@ -23,36 +28,77 @@
     {% else %}
         <p>Váš košík je prázdný.</p>
     {% endif %}
-
 {% endblock %}
 
 {% block extra_js %}
     <script>
-        // Funkce pro zobrazení popupu
-        function showPopup(message) {
-            var popup = document.createElement('div');
+        function showPopup(message, color = 'green') {
+            const popup = document.createElement('div');
             popup.classList.add('popup');
             popup.textContent = message;
             popup.style.position = 'fixed';
             popup.style.top = '20px';
             popup.style.right = '20px';
             popup.style.padding = '10px';
-            popup.style.backgroundColor = 'green';
+            popup.style.backgroundColor = color;
             popup.style.color = 'white';
             popup.style.borderRadius = '5px';
             popup.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
             document.body.appendChild(popup);
-
-            // Automaticky skryt popup po 3 sekundách
-            setTimeout(function() {
-                popup.remove();
-            }, 3000);
+            setTimeout(() => popup.remove(), 3000);
         }
 
-        // Simulace přidání do košíku, zavolá showPopup při přidání
-        document.querySelectorAll('.add-to-cart-btn').forEach(function(button) {
+        document.querySelectorAll('.update-quantity').forEach(button => {
             button.addEventListener('click', function() {
-                showPopup('Produkt byl přidán do košíku!');
+                const productId = this.getAttribute('data-id');
+                const action = this.getAttribute('data-action');
+                fetch("{% url 'update_cart_quantity' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ product_id: productId, action: action })
+                }).then(res => res.json())
+                  .then(data => {
+                      console.log(data);  // Pro ladění odpovědi serveru
+                      if (data.success) {
+                          // Možnost aktualizace DOM místo reloadu
+                          const itemQuantity = document.querySelector(`[data-id="${productId}"]`).closest('.list-group-item').querySelector('.item-quantity');
+                          itemQuantity.textContent = data.new_quantity;
+                      } else {
+                          showPopup("Chyba při aktualizaci množství", 'red');
+                      }
+                  }).catch(err => {
+                      console.log(err);
+                      showPopup("Došlo k chybě při komunikaci se serverem", 'red');
+                  });
+            });
+        });
+
+        document.querySelectorAll('.remove-item').forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.getAttribute('data-id');
+                fetch("{% url 'remove_from_cart' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ product_id: productId })
+                }).then(res => res.json())
+                  .then(data => {
+                      if (data.success) {
+                          // Odstranit položku z DOM
+                          this.closest('.list-group-item').remove();
+                          showPopup("Položka byla odstraněna z košíku");
+                      } else {
+                          showPopup("Chyba při odstraňování položky", 'red');
+                      }
+                  }).catch(err => {
+                      console.log(err);
+                      showPopup("Došlo k chybě při komunikaci se serverem", 'red');
+                  });
             });
         });
     </script>

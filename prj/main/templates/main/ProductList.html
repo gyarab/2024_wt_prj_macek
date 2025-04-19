@@ -20,6 +20,28 @@
         </ul>
     </div>
 
+    {% if selected_category_name == "Ovoce a zelenina" or selected_category_name == "Maso a ryby" %}
+        <div class="alert alert-warning">
+            Upozornění: U této kategorie jsou ceny uvedeny za 1 kg zboží.
+        </div>
+    {% endif %}
+
+    {% if subcategories %}
+        <div class="mb-3">
+            <h5>Podkategorie:</h5>
+            <ul class="list-inline">
+                {% for subcategory in subcategories %}
+                    <li class="list-inline-item">
+                        <a class="btn btn-outline-info {% if subcategory.id|stringformat:'s' == selected_subcategory %}active{% endif %}"
+                           href="?subcategory={{ subcategory.id }}&category={{ selected_category }}">
+                            {{ subcategory.name }}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
     <div class="row row-cols-1 row-cols-md-4 g-4">
         {% for product in products %}
             <div class="col">
@@ -53,10 +75,8 @@
         {% endfor %}
     </div>
 
-    <!-- Popup pro přidání do košíku -->
     <div class="alert alert-success alert-dismissible fade" id="cartPopup" role="alert">
         Produkt byl přidán do košíku!
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-
 {% endblock %}
