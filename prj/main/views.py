@@ -6,6 +6,11 @@ from django.contrib.auth.models import User
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 import json
+from django.shortcuts import render
+from django.contrib.auth import authenticate, login
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import UserCreationForm
 
 class ProductList(ListView):
     model = Product
@@ -57,13 +62,12 @@ class CartView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Pokud je uživatel přihlášen, použij jeho košík, jinak session_key
         if self.request.user.is_authenticated:
             cart = Cart.objects.filter(user=self.request.user).first()
         else:
             session_key = self.request.session.session_key
             if not session_key:
-                self.request.session.create()  # Vytvoří session_key, pokud ještě není
+                self.request.session.create()  
             cart = Cart.objects.filter(session_key=session_key).first()
 
         if cart:
@@ -78,25 +82,20 @@ class CartView(TemplateView):
         return context
 
 def add_to_cart(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-
-    # Pokud je uživatel přihlášen, použij jeho košík, jinak session_key
     if request.user.is_authenticated:
-        cart, created = Cart.objects.get_or_create(user=request.user)
-    else:
-        session_key = request.session.session_key
-        if not session_key:
-            request.session.create()  # Vytvoří session_key, pokud ještě není
-        cart, created = Cart.objects.get_or_create(session_key=session_key)
-    
-    # Zkontroluj, zda košík existuje nebo byl vytvořen
-    cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
-    if not created:
-        cart_item.quantity += 1
-        cart_item.save()
+        product = Product.objects.get(id=product_id)
 
-    # Vrať odpověď s novým počtem položek v košíku
-    return JsonResponse({'cart_count': cart.get_item_count()})
+        cart = request.session.get('cart', {})
+        if product_id in cart:
+            cart[product_id] += 1  
+        else:
+            cart[product_id] = 1  
+        request.session['cart'] = cart
+
+        cart_item_count = sum(cart.values())
+        return JsonResponse({'cart_count': cart_item_count})
+
+    return redirect('login')  
 
 @require_POST
 @csrf_exempt
@@ -105,7 +104,6 @@ def update_cart_quantity(request):
     product_id = data.get('product_id')
     action = data.get('action')
 
-    # Zjisti, jestli je uživatel přihlášen, nebo použij session_key
     if request.user.is_authenticated:
         cart = Cart.objects.get(user=request.user)
     else:
@@ -117,11 +115,10 @@ def update_cart_quantity(request):
     try:
         cart_item = CartItem.objects.get(cart=cart, product_id=product_id)
         
-        # Proveď akci na základě požadavku (zvýšit/nižší množství)
         if action == 'increment':
             cart_item.quantity += 1
         elif action == 'decrement':
-            cart_item.quantity = max(cart_item.quantity - 1, 1)  # Min. množství = 1
+            cart_item.quantity = max(cart_item.quantity - 1, 1)  
         cart_item.save()
 
         return JsonResponse({'success': True, 'new_quantity': cart_item.quantity})
@@ -131,11 +128,10 @@ def update_cart_quantity(request):
 
 @require_POST
 @csrf_exempt
-def remove_from_cart(request):
+def remove_from_cart(request, product_id):
     data = json.loads(request.body)
     product_id = data.get('product_id')
 
-    # Zjisti, jestli je uživatel přihlášen, nebo použij session_key
     if request.user.is_authenticated:
         cart = Cart.objects.get(user=request.user)
     else:
@@ -144,9 +140,49 @@ def remove_from_cart(request):
             return JsonResponse({'error': 'Session not found'}, status=400)
         cart = Cart.objects.get(session_key=session_key)
 
-    # Odstraň produkt z košíku
-    CartItem.objects.filter(cart=cart, product_id=product_id).delete()
+    # Zkontrolujeme, zda je položka v košíku
+    cart_item = CartItem.objects.filter(cart=cart, product_id=product_id).first()
+    if not cart_item:
+        return JsonResponse({'error': 'Product not found in cart'}, status=400)
+
+    cart_item.delete()
     return JsonResponse({'success': True})
+
 
 class CheckoutView(TemplateView):
     template_name = 'main/checkout.html'
+
+def login_view(request):
+    return render(request, 'main/login.html')
+
+def login_view(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect('homepage')
+    else:
+        form = AuthenticationForm()
+
+    return render(request, 'main/login.html', {'form': form})
+
+def register_view(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        password_confirm = request.POST['password_confirm']
+
+        if password != password_confirm:
+            return render(request, 'main/register.html', {'error': 'Hesla se neshodují.'})
+        
+        if User.objects.filter(username=username).exists():
+            return render(request, 'main/register.html', {'error': 'Uživatelské jméno je již zaregistrováno.'})
+
+        user = User.objects.create_user(username=username, password=password)
+
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+
+        return redirect('homepage')  
+
+    return render(request, 'main/register.html')
