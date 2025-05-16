@@ -86,16 +86,14 @@ def add_to_cart(request, product_id):
     else:
         session_key = request.session.session_key
         if not session_key:
-            request.session.create()  # Vytvoří session_key, pokud ještě není
+            request.session.create()  
         cart, created = Cart.objects.get_or_create(session_key=session_key)
     
-    # Zkontroluj, zda košík existuje nebo byl vytvořen
     cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
     if not created:
         cart_item.quantity += 1
         cart_item.save()
 
-    # Vrať odpověď s novým počtem položek v košíku
     return JsonResponse({'cart_count': cart.get_item_count()})
 
 @require_POST
@@ -105,7 +103,6 @@ def update_cart_quantity(request):
     product_id = data.get('product_id')
     action = data.get('action')
 
-    # Zjisti, jestli je uživatel přihlášen, nebo použij session_key
     if request.user.is_authenticated:
         cart = Cart.objects.get(user=request.user)
     else:
@@ -117,11 +114,10 @@ def update_cart_quantity(request):
     try:
         cart_item = CartItem.objects.get(cart=cart, product_id=product_id)
         
-        # Proveď akci na základě požadavku (zvýšit/nižší množství)
         if action == 'increment':
             cart_item.quantity += 1
         elif action == 'decrement':
-            cart_item.quantity = max(cart_item.quantity - 1, 1)  # Min. množství = 1
+            cart_item.quantity = max(cart_item.quantity - 1, 1)  
         cart_item.save()
 
         return JsonResponse({'success': True, 'new_quantity': cart_item.quantity})
@@ -135,7 +131,6 @@ def remove_from_cart(request):
     data = json.loads(request.body)
     product_id = data.get('product_id')
 
-    # Zjisti, jestli je uživatel přihlášen, nebo použij session_key
     if request.user.is_authenticated:
         cart = Cart.objects.get(user=request.user)
     else:
@@ -144,7 +139,6 @@ def remove_from_cart(request):
             return JsonResponse({'error': 'Session not found'}, status=400)
         cart = Cart.objects.get(session_key=session_key)
 
-    # Odstraň produkt z košíku
     CartItem.objects.filter(cart=cart, product_id=product_id).delete()
     return JsonResponse({'success': True})
 
