@@ -36,8 +36,6 @@
                         <i class="fas fa-shopping-cart"></i> Košík 
                         {% if cart_item_count > 0 %}
                             (<span id="cart-count">{{ cart_item_count }}</span>)
-                        {% else %}
-                            <!-- Pokud je počet položek v košíku 0, nezobrazí se závorky -->
                         {% endif %}
                     </a>
                 </div>
@@ -139,5 +137,7 @@
             });
         });
     </script>
+
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

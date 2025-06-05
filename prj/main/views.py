@@ -7,6 +7,25 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 import json
 
+def calculate_cart_total(cart_obj):
+    total = sum(item.product.price * item.quantity for item in CartItem.objects.filter(cart=cart_obj))
+    return total
+
+def get_cart_item_count(cart_obj):
+    count = sum(item.quantity for item in CartItem.objects.filter(cart=cart_obj))
+    return count
+
+def get_user_cart(request):
+    if request.user.is_authenticated:
+        cart, created = Cart.objects.get_or_create(user=request.user)
+    else:
+        session_key = request.session.session_key
+        if not session_key:
+            request.session.create()
+            session_key = request.session.session_key
+        cart, created = Cart.objects.get_or_create(session_key=session_key)
+    return cart
+
 class ProductList(ListView):
     model = Product
     template_name = 'main/ProductList.html'
@@ -56,74 +75,81 @@ class CartView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        cart = get_user_cart(self.request)
 
-        # Pokud je uživatel přihlášen, použij jeho košík, jinak session_key
-        if self.request.user.is_authenticated:
-            cart = Cart.objects.filter(user=self.request.user).first()
-        else:
-            session_key = self.request.session.session_key
-            if not session_key:
-                self.request.session.create()  # Vytvoří session_key, pokud ještě není
-            cart = Cart.objects.filter(session_key=session_key).first()
-
-        if cart:
-            cart_items = CartItem.objects.filter(cart=cart)
-            total_price = sum(item.product.price * item.quantity for item in cart_items)
-            context['cart_items'] = cart_items
-            context['total_price'] = total_price
-        else:
-            context['cart_items'] = []
-            context['total_price'] = 0
-
+        cart_items = CartItem.objects.filter(cart=cart)
+        total_price = calculate_cart_total(cart)
+        
+        context['cart_items'] = cart_items
+        context['total_price'] = total_price
+        
         return context
 
-def add_to_cart(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-
-    # Pokud je uživatel přihlášen, použij jeho košík, jinak session_key
-    if request.user.is_authenticated:
-        cart, created = Cart.objects.get_or_create(user=request.user)
-    else:
-        session_key = request.session.session_key
-        if not session_key:
-            request.session.create()  
-        cart, created = Cart.objects.get_or_create(session_key=session_key)
+@require_POST
+def add_to_cart(request):
+    data = json.loads(request.body)
+    product_id = data.get('product_id')
+    quantity = data.get('quantity', 1)
     
+    product = get_object_or_404(Product, id=product_id)
+    cart = get_user_cart(request)
+
     cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
     if not created:
-        cart_item.quantity += 1
-        cart_item.save()
+        cart_item.quantity += int(quantity)
+    cart_item.save()
 
-    return JsonResponse({'cart_count': cart.get_item_count()})
+    cart_count = get_cart_item_count(cart)
+    total_price = calculate_cart_total(cart)
+
+    return JsonResponse({'success': True, 'cart_count': cart_count, 'total_price': total_price})
 
 @require_POST
-@csrf_exempt
 def update_cart_quantity(request):
     data = json.loads(request.body)
     product_id = data.get('product_id')
     action = data.get('action')
 
-    if request.user.is_authenticated:
-        cart = Cart.objects.get(user=request.user)
-    else:
-        session_key = request.session.session_key
-        if not session_key:
-            return JsonResponse({'error': 'Session not found'}, status=400)
-        cart = Cart.objects.get(session_key=session_key)
+    cart = get_user_cart(request)
 
     try:
-        cart_item = CartItem.objects.get(cart=cart, product_id=product_id)
+        item = CartItem.objects.get(cart=cart, product_id=product_id)
         
-        if action == 'increment':
-            cart_item.quantity += 1
-        elif action == 'decrement':
-            cart_item.quantity = max(cart_item.quantity - 1, 1)  
-        cart_item.save()
+        new_quantity = item.quantity
 
-        return JsonResponse({'success': True, 'new_quantity': cart_item.quantity})
-    
+        if action == 'increment':
+            new_quantity += 1
+        elif action == 'decrement':
+            new_quantity -= 1
+        
+        if new_quantity <= 0:
+            item.delete()
+            new_quantity = 0 
+        else:
+            item.quantity = new_quantity
+            item.save()
+
+        current_total_price = calculate_cart_total(cart)
+        current_cart_items_count = get_cart_item_count(cart)
+
+        return JsonResponse({
+            'success': True,
+            'new_quantity': new_quantity,
+            'total_price': current_total_price,
+            'cart_count': current_cart_items_count
+        })
     except CartItem.DoesNotExist:
-        return JsonResponse({'error': 'Item not found in cart'}, status=404)
+        current_total_price = calculate_cart_total(cart)
+        current_cart_items_count = get_cart_item_count(cart)
+        return JsonResponse({
+            'success': True,
+            'new_quantity': 0,
+            'total_price': current_total_price,
+            'cart_count': current_cart_items_count,
+            'message': 'Položka již není v košíku.'
+        }, status=200)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Chyba při aktualizaci množství: {e}'}, status=500)
 
 @require_POST
 @csrf_exempt
@@ -131,16 +157,31 @@ def remove_from_cart(request):
     data = json.loads(request.body)
     product_id = data.get('product_id')
 
-    if request.user.is_authenticated:
-        cart = Cart.objects.get(user=request.user)
-    else:
-        session_key = request.session.session_key
-        if not session_key:
-            return JsonResponse({'error': 'Session not found'}, status=400)
-        cart = Cart.objects.get(session_key=session_key)
+    cart = get_user_cart(request)
 
-    CartItem.objects.filter(cart=cart, product_id=product_id).delete()
-    return JsonResponse({'success': True})
+    try:
+        item_to_delete = CartItem.objects.get(cart=cart, product_id=product_id)
+        item_to_delete.delete()
+        
+        current_total_price = calculate_cart_total(cart)
+        current_cart_items_count = get_cart_item_count(cart)
+
+        return JsonResponse({
+            'success': True,
+            'total_price': current_total_price,
+            'cart_count': current_cart_items_count
+        })
+    except CartItem.DoesNotExist:
+        current_total_price = calculate_cart_total(cart)
+        current_cart_items_count = get_cart_item_count(cart)
+        return JsonResponse({
+            'success': True,
+            'total_price': current_total_price,
+            'cart_count': current_cart_items_count,
+            'message': 'Položka již byla odstraněna z košíku.'
+        }, status=200)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Chyba při odstraňování: {e}'}, status=500)
 
 class CheckoutView(TemplateView):
     template_name = 'main/checkout.html'

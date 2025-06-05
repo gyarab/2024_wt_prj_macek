@@ -3,8 +3,8 @@
 {% block content %}
     <h1>Košík</h1>
 
-    {% if cart_items %}
-        <div class="list-group">
+    <div class="list-group" id="cart-items-list">
+        {% if cart_items %}
             {% for item in cart_items %}
                 <div class="list-group-item d-flex justify-content-between align-items-center cart-item" data-product-id="{{ item.product.id }}">
                     <div>
@@ -19,97 +19,151 @@
                     <span class="badge bg-primary rounded-pill">{{ item.quantity }}</span>
                 </div>
             {% endfor %}
-        </div>
+        {% endif %}
+    </div>
 
-        <div class="mt-4">
-            <h3>Celková cena: {{ total_price }} Kč</h3>
+    <div class="mt-4" id="cart-summary">
+        {% if cart_items %}
+            <h3>Celková cena: <span id="total-cart-price">{{ total_price }}</span> Kč</h3>
             <a href="{% url 'checkout' %}" class="btn btn-success">Přejít k pokladně</a>
-        </div>
-    {% else %}
-        <p>Váš košík je prázdný.</p>
-    {% endif %}
+        {% else %}
+            <p>Váš košík je prázdný.</p>
+        {% endif %}
+    </div>
 {% endblock %}
 
 {% block extra_js %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-    const csrftoken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const csrftoken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            let total_price_element = document.getElementById('total-cart-price'); // Použij 'let' pro možnost re-assignment
+            const cart_count_element = document.getElementById('cart-count'); 
+            const cart_summary_div = document.getElementById('cart-summary');
+            const cart_items_list_div = document.getElementById('cart-items-list');
 
-    function showPopup(message, color = 'green') {
-        const popup = document.createElement('div');
-        popup.classList.add('popup');
-        popup.textContent = message;
-        popup.style.position = 'fixed';
-        popup.style.top = '20px';
-        popup.style.right = '20px';
-        popup.style.padding = '10px';
-        popup.style.backgroundColor = color;
-        popup.style.color = 'white';
-        popup.style.borderRadius = '5px';
-        popup.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
-        document.body.appendChild(popup);
-        setTimeout(() => popup.remove(), 3000);
-    }
+            function showPopup(message, color = 'green') {
+                const popup = document.createElement('div');
+                popup.classList.add('popup');
+                popup.textContent = message;
+                popup.style.position = 'fixed';
+                popup.style.top = '20px';
+                popup.style.right = '20px';
+                popup.style.padding = '10px';
+                popup.style.backgroundColor = color;
+                popup.style.color = 'white';
+                popup.style.borderRadius = '5px';
+                popup.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+                document.body.appendChild(popup);
+                setTimeout(() => popup.remove(), 3000);
+            }
 
-    document.querySelectorAll('.update-quantity').forEach(button => {
-        button.addEventListener('click', function () {
-            console.log('Kliknutí na množství'); // TEST
-            const productId = this.getAttribute('data-id');
-            const action = this.getAttribute('data-action');
+            function updateTotalPriceDisplay(newPrice) {
+                // Překontrolujeme existenci elementu, pokud se DOM změnil
+                total_price_element = document.getElementById('total-cart-price');
+                if (total_price_element) {
+                    total_price_element.textContent = `${newPrice}`;
+                }
+            }
 
-            fetch("{% url 'update_cart_quantity' %}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrftoken
-                },
-                body: JSON.stringify({ product_id: productId, action: action })
-            }).then(res => res.json())
-              .then(data => {
-                  if (data.success) {
-                      const item = document.querySelector(`.cart-item[data-product-id="${productId}"]`);
-                      item.querySelector('.item-quantity').textContent = data.new_quantity;
-                      item.querySelector('.badge').textContent = data.new_quantity;
-                      document.getElementById('cart-count').textContent = data.cart_count;
-                  } else {
-                      showPopup("Chyba při aktualizaci množství", 'red');
-                  }
-              }).catch(err => {
-                  console.error(err);
-                  showPopup("Došlo k chybě při komunikaci se serverem", 'red');
-              });
+            function updateCartCountDisplay(newCount) {
+                if (cart_count_element) {
+                    cart_count_element.textContent = newCount;
+                }
+            }
+
+            function updateCartEmptyState(cartCount) {
+                if (cartCount === 0) {
+                    if (cart_items_list_div) cart_items_list_div.innerHTML = ''; 
+                    if (cart_summary_div) {
+                        cart_summary_div.innerHTML = '<p>Váš košík je prázdný.</p>'; 
+                    }
+                } else {
+                    // Zajištění, že se zobrazí správné UI pro neprázdný košík
+                    // Pokud je košík opět naplněn po vyprázdnění, obnoví se sumář.
+                    // To je důležité, pokud DOM pro sumář byl předtím nahrazen zprávou "prázdný košík".
+                    if (cart_summary_div && cart_summary_div.querySelector('p')) { // Pokud je tam zpráva "prázdný košík"
+                        cart_summary_div.innerHTML = `
+                            <h3>Celková cena: <span id="total-cart-price">${total_price_element ? total_price_element.textContent : '0'}</span> Kč</h3>
+                            <a href="{% url 'checkout' %}" class="btn btn-success">Přejít k pokladně</a>
+                        `;
+                        // Po změně DOM je třeba znovu získat referenci na total_price_element
+                        total_price_element = document.getElementById('total-cart-price');
+                    }
+                }
+            }
+
+            document.querySelectorAll('.update-quantity').forEach(button => {
+                button.addEventListener('click', function () {
+                    const productId = this.getAttribute('data-product-id');
+                    const action = this.getAttribute('data-action');
+                    const currentItemElement = this.closest('.cart-item');
+
+                    fetch("{% url 'update_cart_quantity' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken
+                        },
+                        body: JSON.stringify({ product_id: productId, action: action })
+                    }).then(res => res.json())
+                      .then(data => {
+                          if (data.success) {
+                              if (data.new_quantity > 0) {
+                                  if (currentItemElement) {
+                                      currentItemElement.querySelector('.item-quantity').textContent = data.new_quantity;
+                                      currentItemElement.querySelector('.badge').textContent = data.new_quantity;
+                                  }
+                              } else {
+                                  if (currentItemElement) {
+                                      currentItemElement.remove();
+                                  }
+                                  showPopup("Položka byla odstraněna z košíku.");
+                              }
+                              updateTotalPriceDisplay(data.total_price);
+                              updateCartCountDisplay(data.cart_count);
+                              updateCartEmptyState(data.cart_count);
+                          } else {
+                              showPopup("Chyba při aktualizaci množství", 'red');
+                          }
+                      }).catch(err => {
+                          console.error('Fetch error:', err);
+                          showPopup("Došlo k chybě při komunikaci se serverem", 'red');
+                      });
+                });
+            });
+
+            document.querySelectorAll('.remove-item').forEach(button => {
+                button.addEventListener('click', function () {
+                    const productId = this.getAttribute('data-product-id');
+                    const buttonElement = this;
+
+                    fetch("{% url 'remove_from_cart' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken
+                        },
+                        body: JSON.stringify({ product_id: productId })
+                    }).then(res => res.json())
+                      .then(data => {
+                          if (data.success) {
+                              const item = buttonElement.closest('.cart-item');
+                              if (item) item.remove();
+                              showPopup("Položka byla odstraněna z košíku.");
+                              
+                              updateTotalPriceDisplay(data.total_price);
+                              updateCartCountDisplay(data.cart_count);
+                              updateCartEmptyState(data.cart_count);
+                          } else {
+                              showPopup("Chyba při odstraňování položky", 'red');
+                          }
+                      }).catch(err => {
+                          console.error('Fetch error:', err);
+                          showPopup("Došlo k chybě při komunikaci se serverem", 'red');
+                      });
+                });
+            });
         });
-    });
-
-    document.querySelectorAll('.remove-item').forEach(button => {
-        button.addEventListener('click', function () {
-            console.log('Kliknutí na odstranění'); // TEST
-            const productId = this.getAttribute('data-id');
-            const buttonElement = this;
-
-            fetch("{% url 'remove_from_cart' %}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrftoken
-                },
-                body: JSON.stringify({ product_id: productId })
-            }).then(res => res.json())
-              .then(data => {
-                  if (data.success) {
-                      const item = buttonElement.closest('.cart-item');
-                      if (item) item.remove();
-                      showPopup("Položka byla odstraněna z košíku");
-                      document.getElementById('cart-count').textContent = data.cart_count;
-                  } else {
-                      showPopup("Chyba při odstraňování položky", 'red');
-                  }
-              }).catch(err => {
-                  console.error(err);
-                  showPopup("Došlo k chybě při komunikaci se serverem", 'red');
-              });
-        });
-    });
-});
     </script>
 {% endblock %}
